@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vodíkový slovník</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --navy: #0a1628;
+    --blue: #0057b8;
+    --blue-light: #e6f0fc;
+    --accent: #00c2e0;
+    --text: #1a1f2e;
+    --muted: #6b7280;
+    --border: #e2e6ed;
+    --tag-bg: #eef4ff;
+    --tag-text: #2563eb;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    height: 64px;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    color: #fff;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .logo span {
+    color: var(--accent);
+  }
+
+  .h2-symbol {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .search-wrap {
+    flex: 1;
+    max-width: 560px;
+    position: relative;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    padding: 0.55rem 1rem 0.55rem 2.6rem;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 0.95rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.45); }
+  .search-wrap input:focus {
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.12);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,0.4);
+    pointer-events: none;
+  }
+
+  .header-stats {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.45);
+    white-space: nowrap;
+    margin-left: auto;
+  }
+
+  .count-highlight { color: var(--accent); }
+
+  /* LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* SIDEBAR */
+  aside {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+  }
+
+  .sidebar-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 1.25rem 0.75rem;
+  }
+
+  .cat-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.5rem 1.25rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    color: var(--text);
+    transition: background 0.15s, color 0.15s;
+    gap: 0.5rem;
+  }
+
+  .cat-btn:hover { background: var(--bg); }
+
+  .cat-btn.active {
+    background: var(--blue-light);
+    color: var(--blue);
+    font-weight: 600;
+  }
+
+  .cat-btn .cat-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--bg);
+    color: var(--muted);
+    padding: 0.1rem 0.4rem;
+    border-radius: 100px;
+    min-width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .cat-btn.active .cat-count {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 0.75rem 1.25rem; }
+
+  /* MAIN */
+  main {
+    padding: 1.75rem 2rem;
+    overflow-y: auto;
+  }
+
+  /* ALPHABET NAV */
+  .alpha-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+  }
+
+  .alpha-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .alpha-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .alpha-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .alpha-btn.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+
+  /* RESULTS BAR */
+  .results-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 28px;
+  }
+
+  .results-count {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .results-count strong { color: var(--text); }
+
+  .sort-select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* CARDS */
+  .cards-grid {
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.1rem 1.25rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+    position: relative;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow);
+    border-color: #c5d6f0;
+    transform: translateY(-1px);
+  }
+
+  .card.expanded {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(0,87,184,0.1);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .card-title-area { flex: 1; }
+
+  .card-pojem {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text);
+    margin-bottom: 0.2rem;
+  }
+
+  .card-pojem mark {
+    background: #fff3b0;
+    border-radius: 2px;
+    padding: 0 1px;
+    color: inherit;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+  }
+
+  .tag {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .tag-cat { background: var(--tag-bg); color: var(--tag-text); }
+  .tag-sub { background: #f0fdf4; color: #16a34a; }
+  .tag-zkratka {
+    font-family: 'Space Mono', monospace;
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 0.7rem;
+  }
+  .tag-en { background: #faf5ff; color: #7c3aed; }
+
+  .card-chevron {
+    color: var(--muted);
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: transform 0.2s;
+  }
+
+  .card.expanded .card-chevron { transform: rotate(180deg); }
+
+  .card-body {
+    display: none;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .card.expanded .card-body { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-popis {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #374151;
+  }
+
+  .card-popis mark {
+    background: #fff3b0;
+    border-radius: 2px;
+    padding: 0 1px;
+    color: inherit;
+  }
+
+  .card-footer-info {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .card-footer-info span { display: flex; align-items: center; gap: 0.3rem; }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty h3 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text); }
+  .empty p { font-size: 0.875rem; }
+
+  /* CLEAR BTN */
+  .clear-btn {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    padding: 0.2rem;
+    display: none;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .clear-btn:hover { color: #fff; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { display: none; }
+    header { gap: 1rem; }
+    .logo { font-size: 0.8rem; }
+    .header-stats { display: none; }
+    main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="h2-symbol">H₂</span>
+    <span>Slovník</span>
+  </div>
+  <div class="search-wrap">
+    <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input id="searchInput" type="text" placeholder="Hledat pojem, zkratku, popis…" autocomplete="off">
+    <button class="clear-btn" id="clearBtn">✕</button>
+  </div>
+  <div class="header-stats">
+    <span class="count-highlight" id="statCount">203</span> pojmů
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="sidebar-title">Kategorie</div>
+    <button class="cat-btn active" data-cat="">
+      Vše
+      <span class="cat-count" id="countAll">203</span>
+    </button>
+    <div class="divider"></div>
+    <div id="catList"></div>
+  </aside>
+
+  <main>
+    <nav class="alpha-nav" id="alphaNav"></nav>
+    <div class="results-bar">
+      <div class="results-count" id="resultsCount"></div>
+      <select class="sort-select" id="sortSelect">
+        <option value="az">A → Z</option>
+        <option value="za">Z → A</option>
+        <option value="newest">Nejnovější</option>
+      </select>
+    </div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </main>
+</div>
+
+<script>
+const DATA = [{"pojem":"Adaptivn\u00ed regulace","doslovny":"","zkratka":"","popis":"Automatick\u00e9 p\u0159izp\u016fsoben\u00ed provozn\u00edch parametr\u016f (nap\u0159. tlaku, pr\u016ftoku) na z\u00e1klad\u011b aktu\u00e1ln\u00edch podm\u00ednek.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-03-10"},{"pojem":"Adicionalita","doslovny":"","zkratka":"","popis":"Jedn\u00e1 se o princip zakotven\u00fd v\u00a0Delegovan\u00e9m aktu Evropsk\u00e9 komise o pravidlech pro v\u00fdrobu obnoviteln\u00fdch paliv nebiologick\u00e9ho p\u016fvodu\u00a0(RFNBO) dopl\u0148uj\u00edc\u00ed sm\u011brnici\u00a0RED.\u00a0","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Agentura Evropsk\u00e9 unie pro spolupr\u00e1ci energetick\u00fdch regula\u010dn\u00edch org\u00e1n\u016f","doslovny":"European Union Agency for the Cooperation of Energy Regulators","zkratka":"ACER","popis":"Podporuju spolupr\u00e1ci mezi vnitrost\u00e1tn\u00edmi regula\u010dn\u00edmi org\u00e1ny v oblasti energetiky v EU (fungov\u00e1n\u00ed jednotn\u00e9ho evropsk\u00e9ho trhu s elektrou a se zemn\u00edm plynem). V\u00a0budoucnu bude do gesce ACER spadat i jednotn\u00fd trh s\u00a0vod\u00edkem.","kategorie":"Instituce a organizace","subkategorie":"Evropsk\u00e9 instituce","datum":"2025-04-29"},{"pojem":"Akceleraci\u00e1 z\u00f3ny","doslovny":"","zkratka":"","popis":"Konkr\u00e9tn\u00ed m\u00edsto nebo oblast (pevnina, mo\u0159e, vnitrozemsk\u00e9 vody), kter\u00e9 byly \u010dlenck\u00fdm st\u00e1tem ur\u010deny za obzvl\u00e1\u0161\u0165 vhodn\u00e9 pro instalaci za\u0159\u00edzen\u00ed na v\u00fdrobu energie z obnoviteln\u00fdch zdroj\u016f. St\u00e1ty ktomu vyb\u00edz\u00ed sm\u011brnice\u00a0RED. Bude zde zjednodu\u0161en\u00e9 \u0159\u00edzen\u00ed pro v\u00fdstavbu OZE; sm\u011brnice\u00a0RED\u00a0stan\u00edov\u00ed p\u0159\u00edmo, jak\u00fdm zp\u016fsobem a v jak\u00fdch lh\u016ft\u00e1ch bude v akcelerac\u00edch z\u00f3n\u00e1ch prob\u00edhat povolovac\u00ed \u0159\u00edzen\u00ed pro v\u00fdstavbu obnoviteln\u00fdch zdroj\u016f energie.","kategorie":"Ekonomika a trh","subkategorie":"Dotace a pobd\u00edky","datum":"2025-04-29"},{"pojem":"Alternativn\u00ed paliva","doslovny":"","zkratka":"","popis":"Paliva nebo zdroje energie, kter\u00e9 v\u00a0r\u00e1mci energie pou\u017e\u00edvan\u00e9 v\u00a0doprav\u011b slou\u017e\u00ed alespo\u0148 z\u010d\u00e1sti jako n\u00e1hrada zdroj\u016f fossiln\u00edch paliv a\u00a0kter\u00e9 maj\u00ed potenci\u00e1l p\u0159isp\u011bt k\u00a0jej\u00ed dekarbonizaci a\u00a0zv\u00fd\u0161it environmentaln\u00ed v\u00fdkonnost odv\u011btv\u00ed dopravy. Zahrnuj\u00ed elektinu, vod\u00edk, amoniak a\u00a0obnoviteln\u00e1 paliva\u00a0jako bioplyn. Alternativn\u00ed paliva jsou definov\u00e1na v\u00a0\u010dl. 2 Na\u0159\u00edzen\u00ed o zav\u00e1d\u011bn\u00ed infrastruktury pro alternativn\u00ed paliva.","kategorie":"Aplikace","subkategorie":"Doprava","datum":"2025-04-29"},{"pojem":"Ammonia jako m\u00e9dium pro skladov\u00e1n\u00ed a p\u0159epravu vod\u00edku","doslovny":"","zkratka":"","popis":"Pou\u017eit\u00ed amoniaku (NH\u2083) jako nosi\u010de vod\u00edku, kter\u00fd m\u016f\u017ee b\u00fdt ekonomicky v\u00fdhodn\u00fd pro p\u0159epravu na velk\u00e9 vzd\u00e1lenosti.","kategorie":"Aplikace","subkategorie":"Doprava","datum":"2025-08-07"},{"pojem":"Analyz\u00e1tor plyn\u016f","doslovny":"","zkratka":"","popis":"Za\u0159\u00edzen\u00ed pro detekci a m\u011b\u0159en\u00ed slo\u017een\u00ed plyn\u00e9 sm\u011bsi, zejm\u00e9na koncentrace vod\u00edku.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Technick\u00e9 parametry a zkou\u0161ky","datum":"2025-03-10"},{"pojem":"Aniontov\u00e1 v\u00fdm\u011bnn\u00e1 membr\u00e1na","doslovny":"Anion exchange membrane","zkratka":"AEM","popis":"Speci\u00e1ln\u00ed membr\u00e1na, kter\u00e1 propou\u0161t\u00ed anionty a blokuje kationty. Tyto membr\u00e1ny jsou kl\u00ed\u010dov\u00fdmi komponenty r\u016fzn\u00fdch elektrochemick\u00fdch za\u0159\u00edzen\u00ed, jako jsou palivov\u00e9 \u010dl\u00e1nky, vodn\u00ed elektrolyz\u00e9ry a redoxn\u00ed pr\u016ftokov\u00e9 baterie. AEM se skl\u00e1daj\u00ed z polymern\u00edho z\u00e1kladu s kladn\u011b nabit\u00fdmi funk\u010dn\u00edmi skupinami, kter\u00e9 umo\u017e\u0148uj\u00ed transport aniont\u016f, obvykle za pomoci molekul vody.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-03-12"},{"pojem":"Aukce jako slu\u017eba","doslovny":"Auction as a service","zkratka":"A-as-a-S","popis":"Platforma pro \u010dlensk\u00e9 st\u00e1ty EU, skrze kterou mohou st\u00e1ty vyd\u011blit \u010d\u00e1st sv\u00fdch vlastn\u00edch finan\u010dn\u00edch prost\u0159edk\u016f do Evropsk\u00e9 vod\u00edkov\u00e9 banky. O tyto prost\u0159edky pak mohou sout\u011b\u017eit jen projekty z dan\u00e9ho \u010dlensk\u00e9ho st\u00e1tu. Aukce prob\u00edhaj\u00ed spole\u010dn\u011b s aukc\u00ed Evropsk\u00e9 vod\u00edkov\u00e9 banky v r\u00e1mci Inova\u010dn\u00edho fondu.","kategorie":"Ekonomika a trh","subkategorie":"Slu\u017eby a platformy","datum":"2025-04-29"},{"pojem":"Autotermi\u010dn\u00ed reforming","doslovny":"Autothermal reforming","zkratka":"ATR","popis":"Kombinace parn\u00edho reformingu a \u010d\u00e1ste\u010dn\u00e9 oxidace, kde je proces energeticky sob\u011bsta\u010dn\u00fd (autotermi\u010dn\u00ed).","kategorie":"V\u00fdroba","subkategorie":"Reformov\u00e1n\u00ed","datum":"2025-08-12"},{"pojem":"Biol\u00fdza","doslovny":"","zkratka":"","popis":"Biol\u00fdza vody je proces v\u00fdroby vod\u00edku z vody pomoc\u00ed mikroorganismu\u016f, jako jsou bakterie nebo \u0159asy, kter\u00e9 produkuj\u00ed vod\u00edk fermantac\u00ed nebo fotosyntez\u00f3u. Jedn\u00e1 se o ud\u017eiteln\u00fd a ekologick\u00fd proces, ale st\u00e1le se vyv\u00edj\u00ed a m\u00e1 omezen\u00e9 zdroje.","kategorie":"V\u00fdroba","subkategorie":"Biologick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"Bio-termol\u00fdza","doslovny":"","zkratka":"","popis":"Termick\u00fd proces vyu\u017e\u00edvaj\u00edc\u00ed biomasu pro v\u00fdrobu vod\u00edku.","kategorie":"V\u00fdroba","subkategorie":"Biologick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"Bio-vod\u00edk","doslovny":"","zkratka":"","popis":"Produkce vod\u00edku z biomasy pomoc\u00ed biologick\u00fdch proces\u016f.","kategorie":"V\u00fdroba","subkategorie":"Biologick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"CBAM (2023/956)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed, kter\u00fdm se zav\u00e1d\u00ed mechanismus uhl\u00edkov\u00e9ho vyrovn\u00e1n\u00ed na hranic\u00edch.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Certifik\u00e1t udr\u017eitelnosti","doslovny":"certificate of sustainability","zkratka":"","popis":"Jedn\u00e1 se o certifik\u00e1t, kter\u00fd slou\u017e\u00ed k ov\u011b\u0159en\u00ed udr\u017eitelnosti paliva. Podm\u00ednkou pro vyd\u00e1n\u00ed certifik\u00e1tu udr\u017eitelnosti je spln\u011bn\u00ed krit\u00e9ri\u00ed, kter\u00e9 jsou definov\u00e1ny ve Sm\u011brnici na podporu vyu\u017e\u00edv\u00e1n\u00ed obnoviteln\u00fdch zdroj\u016f energie (RED).","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"CSA HGV 4.3","doslovny":"Test methods for hydrogen fueling parameter evaluation","zkratka":"","popis":"Testovac\u00ed metody pro hodnocen\u00ed parametr\u016f pln\u011bn\u00ed vod\u00edku. Pou\u017e\u00edv\u00e1 se pro validaci protokolu MC Formula","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-08-12"},{"pojem":"\u010casov\u00e1 korelace","doslovny":"temporall correlation","zkratka":"","popis":"Princip zakotven\u00fd v Delegovan\u00e9m aktu Evropsk\u00e9 komise o pravidlech pro v\u00fdrobu obnoviteln\u00fdch paliv nebiologick\u00e9ho p\u016fvodu (RFNBO) dopl\u0148uj\u00edc\u00ed sm\u011brnici RED. \u010casov\u00e1 korelace stanvuje, \u017ee mno\u017estv\u00ed elektrick\u00e9 energie spot\u0159ebovan\u00e9 v elektrolyz\u00e9ru mus\u00ed b\u00fdt v ur\u010dit\u00e9m \u010dasov\u00e9m obdob\u00ed propojeno s vyrobenou elektric\u00edtou u obnoviteln\u00e9ho zdroje energie.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"\u010c\u00e1ste\u010dn\u00e1 oxidace","doslovny":"Partial oxidation","zkratka":"POX","popis":"Proces, p\u0159i n\u011bm\u017e doch\u00e1z\u00ed k \u010d\u00e1ste\u010dn\u00e9 oxidaci uhlovodíku za \u00fa\u010delem v\u00fdroby vod\u00edku.","kategorie":"V\u00fdroba","subkategorie":"Reformov\u00e1n\u00ed","datum":"2025-08-12"},{"pojem":"\u010cerpac\u00ed stanice na kapaln\u00fd vod\u00edk","doslovny":"Liquid Hydrogen Refueling Station","zkratka":"LHRS","popis":"\u010cerpac\u00ed stanice, kter\u00e9 skladuj\u00ed vod\u00edk v kapaln\u00e9m stavu a vyu\u017e\u00edvaj\u00ed inovativn\u00ed strategie p\u0159edchlazn\u00ed pro sn\u00ed\u017een\u00ed spot\u0159eby energie p\u0159i tankv\u00e1n\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"\u010cerpac\u00ed stanice","datum":"2025-08-07"},{"pojem":"DA GHG (2023/1185)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed v p\u0159enes\u00e9 pravomoci stanvuj\u00edc\u00ed minim\u00e1ln\u00ed hodnoty pro \u00fasp\u00f3\u0159y emis\u00ed sklen\u00edkov\u00fdch plyn\u016f z recyclov\u00e1n\u00fdch paliv s obsahem uhl\u00edku a up\u0159es\u0148ov\u00e1n\u00edm metodiky pro posuzov\u00e1n\u00ed \u00fasp\u00f3r emis\u00ed sklen\u00edkov\u00fdch plyn\u016f z kapaln\u00fdch a plynn\u00fdch paliv z obnoviteln\u00fdch zdroj\u016f nebiologick\u00e9ho p\u016fvodu pou\u017e\u00edvan\u00fdch v odv\u011btv\u00ed dopravy a z recyclov\u00e1n\u00fdch paliv s obsahem uhl\u00edku.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"DA k EU ETS (2024/873)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed v p\u0159enes\u00e9 pravomoci, pokud jde o p\u0159echodn\u00e1 pravidla harmonizovan\u00e9ho p\u0159id\u011blov\u00e1n\u00ed bezplatn\u00fdch povolen\u00ed na emise.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"DA RFNBO (2023/1184)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed v p\u0159enes\u00e9 pravomoci stanvuj\u00edc\u00ed unijn\u00ed metodiku, v n\u00ed\u017e jsou vymezena porobn\u00e1 pravidla pro v\u00fdrobu kapaln\u00fdch a plynn\u00fdch paliv z obnoviteln\u00fdch zdroj\u016f nebiologick\u00e9ho p\u016fvodu pou\u017e\u00edvan\u00fdch v odv\u011btv\u00ed dopravy.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Deriv\u00e1ty vod\u00edku","doslovny":"","zkratka":"","popis":"Chemick\u00e9 slou\u010deniny jejich\u017e stavem jsou molekuly vod\u00edku. Tyto deriv\u00e1ty se vyu\u017e\u00edvaj\u00ed k transportu vod\u00edku na del\u0161\u00ed vzd\u00e1lenosti. Jedn\u00e1 se nap\u0159\u00edklad o \u010dpavek, methanol \u010di e-paliva.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-04-29"},{"pojem":"Diferenci\u00e1ln\u00ed tlak","doslovny":"","zkratka":"","popis":"Rozd\u00edl tlaku mezi dv\u011bma body syst\u00e9mu, kl\u00ed\u010dov\u00fd pro \u0159\u00edzen\u00ed pr\u016ftoku.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Fyzik\u00e1ln\u00ed jevy","datum":"2025-03-10"},{"pojem":"Distribu\u010dn\u00ed soustava","doslovny":"","zkratka":"","popis":"Vz\u00e1jemn\u011b propojen\u00fd soubor veden\u00ed a za\u0159\u00edzen\u00ed slou\u017e\u00edc\u00ed k zaji\u0161t\u011bn\u00ed distribuce (dopravy) elektiny, zemn\u00edho plynu \u010di vod\u00edku z\u00e1kazn\u00edk\u016fm na vymezenem \u00fazeom\u00ed.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"Dynamick\u00e1 viskozita","doslovny":"","zkratka":"","popis":"M\u00edra odporu vod\u00edku v\u016f\u010di proud\u011bn\u00ed p\u0159i dan\u00fdch podm\u00ednk\u00e1ch.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Fyzik\u00e1ln\u00ed jevy","datum":"2025-03-10"},{"pojem":"EC79","doslovny":"","zkratka":"","popis":"Evropsk\u00e1 norma pro tlakov\u00e9 syst\u00e9my vod\u00edkov\u00fdch vozidel.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-03-10"},{"pojem":"Elektrick\u00e9 vozidlo s palivov\u00fdm \u010dl\u00e1nkem.","doslovny":"Fuel Cell Electric Vehicle","zkratka":"FCEV","popis":"Elektromobil, kter\u00fd k v\u00fdrob\u011b elektiny poh\u00e1n\u011bj\u00edc\u00ed jeho motor vyu\u017e\u00edv\u00e1 palivov\u00fd \u010dl\u00e1nek nam\u00edsto baterie.","kategorie":"Aplikace","subkategorie":"Doprava","datum":"2025-03-10"},{"pojem":"Elektrody","doslovny":"","zkratka":"","popis":"Kl\u00ed\u010dov\u00e9 komponenty palivov\u00e9ho \u010dl\u00e1nku a elektrolyz\u00e9ru, kde doch\u00e1z\u00ed k elektrochemick\u00fdm reakc\u00edm (anoda a katoda).","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-08-07"},{"pojem":"Elektrolyt","doslovny":"","zkratka":"","popis":"L\u00e1tka v palivov\u00e9m \u010dl\u00e1nku, kter\u00e1 umo\u017e\u0148uje pohyb iont\u016f mezi anodou a katodou, zat\u00edmco br\u00e1n\u00ed p\u0159\u00edm\u00e9mu kontaktu plyn\u016f.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-08-07"},{"pojem":"Elektrol\u00fdza","doslovny":"","zkratka":"","popis":"Elektrochemick\u00e1 reakce, p\u0159i kter\u00e9 doch\u00e1z\u00ed ke \u0161t\u011bpen\u00ed molekul vody za pou\u017eit\u00ed elektrick\u00e9 energie, kdy na katod\u011b doch\u00e1z\u00ed k redukci na vod\u00edk a na anode k redukci na kys\u00edk.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-04-29"},{"pojem":"Elektrolyz\u00e9r","doslovny":"","zkratka":"","popis":"Za\u0159\u00edzen\u00ed pro odlu\u010dov\u00e1n\u00ed, \u0161t\u011bpen\u00ed a transformaci materi\u00e1lu nebo molekuly (reduk\u010dn\u011b-oxida\u010dn\u00ed reakce) pomoc\u00ed elektrick\u00e9 energie.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-04-29"},{"pojem":"Elektrolyz\u00e9r s pevn\u00fdm oxidov\u00fdm elektrolytem","doslovny":"Solid Oxide Electrolyzer Cell","zkratka":"SOEC","popis":"Vysokoteplotn\u00ed elektrochemick\u00e9 za\u0159\u00edzen\u00ed, kter\u00e9 vyu\u017e\u00edv\u00e1 pevn\u00fd oxidov\u00fd elektrolyt k elektrol\u00fdze vody a\/nebo oxidu uhli\u010dit\u00e9ho na vod\u00edk, oxid uhelnat\u00fd a kys\u00edk. Tyto \u010dl\u00e1nky pracuj\u00ed p\u0159i zv\u00fd\u0161en\u00fdch teplot\u00e1ch, obvykle mezi 500 a 850 \u00b0C.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-03-12"},{"pojem":"Elektrostatick\u00fd v\u00fdboj","doslovny":"Electrostatic discharge","zkratka":"ESD","popis":"Rychl\u00fd p\u0159enos statick\u00e9 elektiny mezi dv\u011bma objekty s r\u016fzn\u00fdm elektrick\u00fdm potenci\u00e1lem = potenci\u00e1ln\u00ed riziko, kdy elektrick\u00fd v\u00fdboj m\u016f\u017ee zp\u016fsobit zap\u00e1len\u00ed sm\u011bsi vod\u00edku se vzduchem.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Fyzik\u00e1ln\u00ed jevy","datum":"2025-03-10"},{"pojem":"E-metan","doslovny":"e-methane","zkratka":"","popis":"Syntetick\u00fd plyn, kter\u00fd se vyr\u00e1b\u00ed spojen\u00edm vod\u00edku a oxidu uhli\u010dit\u00e9ho (CO\u2082).","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-12"},{"pojem":"EN ISO 17268","doslovny":"Connecting devices for filling of gaseous hydrogen into land vehicles","zkratka":"","popis":"Evropsk\u00e1 a mezin\u00e1rodn\u00ed norma, kter\u00e1 specifikuje n\u00e1vrh, bezpe\u010dnost a provozn\u00ed vlastnosti spojovac\u00edch za\u0159\u00edzen\u00ed (pln\u00edc\u00edch p\u0159\u00edpojek) pro dopl\u0148ov\u00e1n\u00ed plynn\u00e9ho vod\u00edku do pozemn\u00edch vozidel","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-08-12"},{"pojem":"Energetick\u00e1 hustota","doslovny":"","zkratka":"","popis":"Mno\u017estv\u00ed energie ulo\u017een\u00e9 v jednotce objemu nebo hmotnosti vod\u00edku.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-03-10"},{"pojem":"Entalpe hydrogenace","doslovny":"","zkratka":"","popis":"Zm\u011bna entaple (tepla) b\u011bhem reakce, kdy kov absorbuje vod\u00edk za vzniku hydridu.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-08-07"},{"pojem":"E-paliva","doslovny":"e-fuels","zkratka":"","popis":"E-paliva jsou paliva, kter\u00e1 jsou synteticky vyr\u00e1b\u011bna s vyu\u017eit\u00edm obnoviteln\u00e9 energie (OZE). Vod\u00edk vyroben\u00fd z obnoviteln\u00e9 elektiny se ve specializovan\u00e9m procesu synt\u00e9zy kombinuje s oxidem uhli\u010dit\u00fdm (CO\u2082).","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-04-29"},{"pojem":"EU ETS 2 (2023/959)","doslovny":"Odkaz","zkratka":"","popis":"Sm\u011brnice o vytvo\u0159en\u00ed syst\u00e9mu pro obchodov\u00e1n\u00ed s povolen\u00edmi na emise sklen\u00edkov\u00fdch plyn\u016f v Unii.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"EU Taxonomy (2020/852)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed z\u0159izuj\u00edc\u00ed r\u00e1mce pro usnadn\u011bn\u00ed udr\u017eiteln\u00fdch investic.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Evropsk\u00e1 s\u00edt\u011b provozovatel\u016f vod\u00edkov\u00fdch s\u00edt\u00ed","doslovny":"European Network of Network Operators of Hydrogen","zkratka":"ENNO-H","popis":"Evropsk\u00e1 neziskov\u00e1 organizace, kter\u00e1 je zalo\u017eena za \u00fa\u010delem koordinace \u010dinnost\u00ed provozovatel\u016f vod\u00edkov\u00fdch p\u0159enosov\u00fdch s\u00edt\u00ed (HTNO) v cel\u00e9 EU","kategorie":"Instituce a organizace","subkategorie":"Evropsk\u00e9 instituce","datum":"2025-04-29"},{"pojem":"Evropsk\u00e1 vod\u00edkov\u00e1 p\u00e1te\u0159n\u00ed s\u00edt\u011b","doslovny":"European Hydrogen Backbone","zkratka":"EHB","popis":"Infrastruktura umo\u017e\u0148uj\u00edc\u00ed transevropskou p\u0159epravu vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"Evropsk\u00e1 vod\u00edkov\u00e1 banka","doslovny":"European Hydrogen Bank","zkratka":"EHB","popis":"Iniciativa Evropsk\u00e9 komise v r\u00e1mci Inova\u010dn\u00edho fondu, kter\u00e1 poskytuje firm\u00e1m z \u010dlensk\u00fdch st\u00e1t\u016f mo\u017enost z\u00edskat provozn\u00ed podporu na v\u00fdrobu obnoviteln\u00e9ho vod\u00edku prost\u0159ednictv\u00edm sout\u011b\u017en\u00edho nab\u00eddkov\u00e9ho \u0159\u00edzen\u00ed (aukce).","kategorie":"Ekonomika a trh","subkategorie":"Dotace a pobd\u00edky","datum":"2025-04-29"},{"pojem":"Filtrace plyn\u016f","doslovny":"","zkratka":"","popis":"Odstra\u0148ov\u00e1n\u00ed ne\u010distot a \u010d\u00e1stic z vod\u00edku p\u0159ed vstupem do pln\u00edc\u00edho za\u0159\u00edzen\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Za\u0159\u00edzen\u00ed \u010derpac\u00edch stanic","datum":"2025-03-10"},{"pojem":"Fit for 55","doslovny":"","zkratka":"","popis":"Soubor n\u00e1vrh\u016f na revizi a aktualizaci pr\u00e1vn\u00edch p\u0159edpis\u016f EU a na zavedn\u00ed nov\u00fdch iniciativ, kter\u00fd m\u00e1 zaji\u0161tit, aby byly politiky EU v souladu s klimatick\u00fdmi c\u00edli EU.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Fotofermentace","doslovny":"","zkratka":"","popis":"Biotechnologick\u00fd proces, p\u0159i kter\u00e9m jsou ur\u010dit\u00e9 mikroorganismy za p\u0159\u00edtomnosti sv\u011btla a anaerobních podm\u00ednek p\u0159em\u011b\u0148ov\u00e1ny na vod\u00edk a oxid uhli\u010dit\u00fd.","kategorie":"V\u00fdroba","subkategorie":"Biologick\u00e9 procesy","datum":"2025-08-07"},{"pojem":"Fotokatal\u00fdza","doslovny":"","zkratka":"","popis":"Proces, p\u0159i kter\u00e9m sv\u011btlo aktivuje katalyz\u00e1tor k zah\u00e1jen\u00ed chemick\u00e9 reakce, nap\u0159. pro v\u00fdrobu vod\u00edku z vody.","kategorie":"V\u00fdroba","subkategorie":"Biologick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"Frakn\u00ed\/kryogenn\u00ed destilace","doslovny":"cryogenic distillation","zkratka":"","popis":"Metoda \u010di\u0161t\u011bn\u00ed, kter\u00e1 oddluje slo\u017eky plynn\u00fdch sm\u011bs\u00ed ochlazením na velmi n\u00edzk\u00e9 teploty.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-08-12"},{"pojem":"FuelEU Maritime","doslovny":"","zkratka":"","popis":"Na\u0159\u00edzen\u00ed Evropsk\u00e9 unie, jej\u00edm\u017e c\u00edlem je zv\u00fd\u0161it pod\u00edl obnoviteln\u00fdch a n\u00edzkouhlik\u00fdch paliv v mezin\u00e1rodn\u00ed n\u00e1mo\u0159n\u00ed p\u0159eprav\u011b EU.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"FuelEU Maritime (2023/1805)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed o vyu\u017e\u00edv\u00e1n\u00ed obnoviteln\u00fdch a n\u00edzkouhlik\u00fdch paliv v n\u00e1mo\u0159n\u00ed doprav\u011b.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Geografick\u00e1 korelace","doslovny":"","zkratka":"","popis":"Elektrolyz\u00e9r vyr\u00e1b\u011bj\u00edc\u00ed obnoviteln\u00fd vod\u00edk mus\u00ed nach\u00e1zet ve stejn\u00e9 nab\u00eddkov\u00e9 z\u00f3n\u011b jako obnoviteln\u00e9 zdroje energie, ze kter\u00fdch \u010derp\u00e1 elektinu (sm\u011brnice RED).","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Gibbsova voln\u00e1 energie absorpce vod\u00edku","doslovny":"","zkratka":"\u0394GH","popis":"Termodynamick\u00fd parametr, kter\u00fd ur\u010duje energetickou n\u00e1ro\u010dnost absorpce vod\u00edku v materi\u00e1lu.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-08-07"},{"pojem":"H35 a H70","doslovny":"","zkratka":"","popis":"Tlakov\u00e9 t\u0159\u00eddy pln\u011bn\u00ed pro dopravu (35 a 70 Mpa).","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-12"},{"pojem":"Hmotnostn\u00ed pr\u016ftok vod\u00edku","doslovny":"","zkratka":"","popis":"Mno\u017estv\u00ed vod\u00edku (v gramech za sekundu) dod\u00e1van\u00e9ho p\u0159es v\u00fddejn\u00ed stojan.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-10"},{"pojem":"Hybridn\u00ed termochemick\u00e9 cykly","doslovny":"","zkratka":"","popis":"Skupina metod v\u00fdroby vod\u00edku, kter\u00e9 kombinuj\u00ed teplo a chemick\u00e9 reakce pro rozklad vody, \u010dasto s vyu\u017eit\u00edm recycklace chemik\u00e1li\u00ed.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-08-12"},{"pojem":"Hydridy kov\u016f","doslovny":"Metal hydrides","zkratka":"MH","popis":"Slou\u010deniny kov\u016f a vod\u00edku, kter\u00e9 mohou reverzibln\u011b absorbovat a uvolnit vod\u00edk v pevn\u00e9m stavu.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-07"},{"pojem":"Chladc\u00ed smy\u010dka","doslovny":"","zkratka":"","popis":"Syst\u00e9m zaji\u0161\u0165uj\u00edc\u00ed ochlazov\u00e1n\u00ed vod\u00edku b\u011bhem pln\u011bn\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Ostatn\u00ed technologie","datum":"2025-03-10"},{"pojem":"Inertizace","doslovny":"","zkratka":"","popis":"Proplach inertn\u00edm plynem pro zaji\u0161t\u011bn\u00ed bezpe\u010dnosti","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Ostatn\u00ed technologie","datum":"2025-03-10"},{"pojem":"Infracer\u00e9n\u00e9 datov\u00e9 rozhran\u00ed","doslovny":"Infrared Data Association","zkratka":"IrDA","popis":"Standardizovan\u00fd syst\u00e9m bezdr\u00e1tov\u00e9ho p\u0159enosu dat pomoc\u00ed infracer\u00e9n\u00e9ho z\u00e1\u0159en\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-12"},{"pojem":"Intermetalick\u00e9 slitiny","doslovny":"Intermetallic alloys","zkratka":"","popis":"(TiFe, TiMn\u2082, LaNi\u2085) - p\u0159\u00edklady intermetalick\u00fdch slitin, kter\u00e9 mohou b\u00fdt pou\u017eity pro skladov\u00e1n\u00ed vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-12"},{"pojem":"Joule-Thomson\u016fv jev","doslovny":"","zkratka":"","popis":"Fyzik\u00e1ln\u00ed d\u011bj, p\u0159i kter\u00e9m p\u0159i adiabatick\u00e9m \u0161krten\u00ed pr\u016ftoku doch\u00e1z\u00ed ke zm\u011bn\u011b teploty plynu.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-05-22"},{"pojem":"Kapaln\u00e1 a plynn\u00e1 paliva nebiologick\u00e9ho p\u016fvodu","doslovny":"Renewable fuels of non-biological origin","zkratka":"RFNBO","popis":"N\u011bkdy t\u00e9\u017e \u201ekapaln\u00e1 a plynn\u00e1 paliva nebiologick\u00e9ho p\u016fvodu\u201c. Jedn\u00e1 se o obnoviteln\u00fd vod\u00edk, obnoviteln\u00fd methanol, obnoviteln\u00fd \u010dpavek \u010di e-paliva.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Kapaln\u00e9 organick\u00e9 nosi\u010de vod\u00edku","doslovny":"Liquid organic hydrogen carriers","zkratka":"LOHC","popis":"Nosn\u00e9 molekuly, na kter\u00e9 lze v procesu tzv. hydrogenace nav\u00e1zat vod\u00edk v m\u00edst\u011b jeho v\u00fdroby.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-04-29"},{"pojem":"Kapaln\u00fd vod\u00edk.","doslovny":"Liquid Hydrogen","zkratka":"LH\u2082","popis":"Vod\u00edkov\u00fd plyn, kter\u00fd byl ochlazen do kapaln\u00e9ho stavu, a to ochlazením na extr\u00e9mn\u011b n\u00edzk\u00e9 teploty (pod -253 \u00b0C).","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Zkapalnni vod\u00edk","datum":"2025-03-10"},{"pojem":"Kapit\u00e1lov\u00e9 v\u00fddaje","doslovny":"capital expenditures","zkratka":"CAPEX","popis":"Po\u010d\u00e1te\u010dn\u00ed investi\u010dn\u00ed n\u00e1klady spojen\u00e9 s v\u00fdstavbou a po\u0159\u00edzen\u00edm za\u0159\u00edzen\u00ed.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-08-12"},{"pojem":"Katalytick\u00e1 \u010d\u00e1ste\u010dn\u00e1 oxidace","doslovny":"Catalytic partial oxidation","zkratka":"CPO","popis":"Proces, p\u0159i kter\u00e9m se vod\u00edk \u010d\u00e1ste\u010dn\u011b oxiduje pomoc\u00ed kys\u00edku za p\u0159\u00edtomnosti katalyz\u00e1toru.","kategorie":"V\u00fdroba","subkategorie":"Reformov\u00e1n\u00ed","datum":"2025-08-12"},{"pojem":"Katalyz\u00e1tor","doslovny":"","zkratka":"","popis":"L\u00e1tka (nap\u0159. platina), kter\u00e1 urychluje chemick\u00e9 reakce na elektrod\u00e1ch palivov\u00e9ho \u010dl\u00e1nku bez toho, aby se sama spot\u0159ebovala.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-08-07"},{"pojem":"Komprese vod\u00edku","doslovny":"","zkratka":"","popis":"Zv\u00fd\u0161en\u00ed tlaku vod\u00edku pro umo\u017en\u011bn\u00ed rychl\u00e9ho pln\u011bn\u00ed n\u00e1dr\u017e\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Za\u0159\u00edzen\u00ed \u010derpac\u00edch stanic","datum":"2025-03-10"},{"pojem":"Kryogenn\u00ed technologie","doslovny":"","zkratka":"","popis":"Technologie pracuj\u00edc\u00ed s velmi n\u00edzk\u00fdmi teplotami, vyu\u017e\u00edvan\u00e1 pro skladov\u00e1n\u00ed kapaln\u00e9ho vod\u00edku.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Za\u0159\u00edzen\u00ed \u010derpac\u00edch stanic","datum":"2025-03-10"},{"pojem":"Kv\u00e1zi-\u0161t\u011bpn\u00e9 lomy","doslovny":"Quasi-cleavage fractures","zkratka":"QC","popis":"Typ lomu, kter\u00fd vykazuje rysy jak k\u0159ehk\u00e9ho \u0161t\u011bpen\u00ed, tak ta\u017dn\u00e9ho lomu, \u010dasto pozorovan\u00fd u materi\u00e1l\u016f posti\u017een\u00fdch vod\u00edkov\u00fdm k\u0159ehnut\u00edm.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Materi\u00e1lov\u00e1 v\u011bda","datum":"2025-08-07"},{"pojem":"Lex OZE","doslovny":"","zkratka":"","popis":"Soubor legislativn\u00edch \u00faprav a reforem energetick\u00e9ho z\u00e1kona, kter\u00e9 transponuj\u00ed do \u010desk\u00e9ho pr\u00e1vn\u00edho \u0159\u00e1du nov\u00e9 aspekty, jako je komunitn\u00ed energetika.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Manometr","doslovny":"","zkratka":"","popis":"P\u0159\u00edstroj k m\u011b\u0159en\u00ed tlaku vod\u00edku ve v\u00fddejn\u00edm syst\u00e9mu.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Maxim\u00e1ln\u00ed pracovn\u00ed tlak","doslovny":"Maximum working pressure","zkratka":"MWP","popis":"Nejvy\u0161\u0161\u00ed tlak, kter\u00e9mu m\u016f\u017ee b\u00fdt pln\u00edc\u00ed stanice vod\u00edku vystavena b\u011bhem provozu bez oh\u011bedu na teplotu vod\u00edku.","kategorie":"","subkategorie":"","datum":"2025-09-29"},{"pojem":"Maxim\u00e1ln\u00ed p\u0159\u00edpustn\u00fd pracovn\u00ed tlak","doslovny":"The Maximum Allowable Working Pressure","zkratka":"MAWP","popis":"Nejvy\u0161\u0161\u00ed tlak, kter\u00fd m\u016f\u017ee tlakokov\u00e1 n\u00e1doba bezpe\u010dn\u011b zvl\u00e1dnout za norm\u00e1ln\u00edch provozn\u00edch podm\u00ednek.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-10"},{"pojem":"MC Formula","doslovny":"","zkratka":"","popis":"Vzorc MC (formula) vyu\u017e\u00edv\u00e1 teplotu a tlak paliva na \u010derpac\u00ed stanici, okol\u00ed teplotu, kategorii kapacity CHSS a po\u010d\u00e1te\u010dn\u00ed tlak CHSS k v\u00fdpo\u010dtu vhodn\u00fdch parametr\u016f tankv\u00e1n\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-12"},{"pojem":"Membr\u00e1nov\u00e1 elektrodov\u00e1 sestava","doslovny":"Membrane Electrode Assembly","zkratka":"MEA","popis":"MEA je kl\u00ed\u010dovou sou\u010d\u00e1st palivov\u00fdch \u010dl\u00e1nk\u016f a elektrolyz\u00e9r\u016f, kde doch\u00e1z\u00ed k elektrochemick\u00fdm reakc\u00edm.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-03-10"},{"pojem":"Membr\u00e1nov\u00fd separ\u00e1tor","doslovny":"","zkratka":"","popis":"Za\u0159\u00edzen\u00ed vyu\u017e\u00edvaj\u00edc\u00ed membr\u00e1ny k odlen\u00ed ur\u010dit\u00e9ho plynu od jin\u00fdch plyn\u016f.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Fyzik\u00e1ln\u00ed jevy","datum":"2025-03-10"},{"pojem":"M\u011bstsk\u00e9 uzly","doslovny":"","zkratka":"","popis":"Jsou definov\u00e1ny v Na\u0159\u00edzen\u00ed o hlavn\u00edch sm\u011brech Unie pro rozvoj transevropsk\u00e9 s\u00edt\u011b. Jedn\u00e1 se zpravidla o krajsk\u00e1 m\u011bsta nebo m\u011bsta s v\u00edce ne\u017e 100 000 obyvateli. (AFIR, TEN-T)","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Metanolv\u00e9 technologie skladov\u00e1n\u00ed vod\u00edku","doslovny":"","zkratka":"","popis":"Vyu\u017eit\u00ed metanolu jako nosi\u010de vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-07"},{"pojem":"Mez\u00edklustrov\u00e1 doprava","doslovny":"","zkratka":"","popis":"P\u0159eprava vod\u00edku mezi r\u016fzn\u00fdmi region\u00e1ln\u00edmi vod\u00edkov\u00fdmi \u00fadol\u00edmi nebo klastery.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Silni\u010dn\u00ed a \u017eelezni\u010dn\u00ed p\u0159eprava","datum":"2025-08-07"},{"pojem":"Mez\u00edkrystalv\u00e9 prask\u00e1n\u00ed","doslovny":"Intercrystalline cracking","zkratka":"IC","popis":"Typ lomu, kter\u00fd se \u0161\u00ed\u0159\u00ed pod\u00e9l hranic zrn materi\u00e1lu, \u010dasto spojen\u00fd s k\u0159ehnut\u00edm vod\u00edkem.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Materi\u00e1lov\u00e1 v\u011bda","datum":"2025-08-07"},{"pojem":"M\u00edch\u00e1n\u00ed","doslovny":"Blending","zkratka":"","popis":"P\u0159im\u00edch\u00e1v\u00e1n\u00ed \u010d\u00e1sti vod\u00edku do zemn\u00edho plynu. Prov\u00e1d\u00ed se vst\u0159ikv\u00e1n\u00edm \u010di vtl\u00e1\u010den\u00edm vod\u00edku do plyn\u00e1rensk\u00e9 soustavy.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"Modr\u00fd vod\u00edk","doslovny":"Blue Hydrogen","zkratka":"","popis":"Zastaral\u00e9 ozna\u010den\u00ed. V\u00fdroba vod\u00edku s velkou emisn\u00ed stopou (nap\u0159\u00edklad parn\u00ed reforming methanu) se zachycen\u00edm oxidu uhli\u010dit\u00e9ho.","kategorie":"V\u00fdroba","subkategorie":"Klasifikace podle zdroje","datum":"2025-08-07"},{"pojem":"Nab\u00eddkov\u00e1 z\u00f3na","doslovny":"Bidding zone","zkratka":"","popis":"Nab\u00eddkov\u00e1 (n\u011bkdy t\u00e9\u017e obchodn\u00ed) z\u00f3na je koncept pou\u017e\u00edvan\u00fd v elektroenrgetice; v souvislosti s v\u00fdrobou obnoviteln\u00e9ho vod\u00edku se objevuje ve sm\u011brnici RED.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-04-29"},{"pojem":"N\u00e1rodn\u00ed ak\u010dn\u00ed pl\u00e1n \u010dist\u00e9 mobility","doslovny":"","zkratka":"NAP CM","popis":"Vych\u00e1z\u00ed ze Sm\u011brnice Evropsk\u00e9ho parlamentu a Rady 2014\/94\/EU o zav\u00e1d\u011bn\u00ed infrastruktury pro alternativn\u00ed paliva.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Na\u0159\u00edzen\u00ed o infrastruktu\u0159e pro alternativn\u00ed paliva","doslovny":"Alternative fuels infrastructure regulation","zkratka":"AFIR","popis":"Na\u0159\u00edzen\u00ed stanvuj\u00edc\u00ed minim\u00e1ln\u00ed po\u010det dob\u00edjec\u00edch bod\u016f a pln\u00edc\u00edch stanic, kter\u00e9 mus\u00ed \u010dlensk\u00fd st\u00e1t zaji\u0161tit na s\u00edti TEN-T nebo v m\u011bstsk\u00fdch uzlech.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"N\u00e1sledn\u00e9 tankv\u00e1n\u00ed","doslovny":"Subsequent Fueling","zkratka":"","popis":"Pln\u011bn\u00ed, kter\u00e9 n\u00e1sleduje po aktu\u00e1ln\u00edm pln\u011bn\u00ed za okol\u00edn\u00ed teploty.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-08-12"},{"pojem":"Nejv\u011bt\u0161\u00ed objem n\u00e1dr\u017ee","doslovny":"Largest Tank Volume","zkratka":"TVL","popis":"Objem nejv\u011bt\u0161\u00edho jednotliv\u00e9ho z\u00e1sobn\u00edku v CHSS.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-08-12"},{"pojem":"Neve\u0159ejn\u00e1 pln\u00edc\u00ed stanice vod\u00edku","doslovny":"","zkratka":"","popis":"Pln\u00edc\u00ed stanice s omezen\u00fdm p\u0159\u00edstupem, ur\u010den\u00e1 pro konkr\u00e9tn\u00edho provozvatele \u010di vymezan\u00fd okruh u\u017eivatel\u016f.","kategorie":"","subkategorie":"","datum":"2025-09-29"},{"pojem":"Nivelizovan\u00e9 n\u00e1klady na vod\u00edk","doslovny":"levelised cost of hydrogen","zkratka":"LCOH","popis":"Metrika pou\u017e\u00edvan\u00e1 k posouzen\u00ed n\u00e1kladov\u00e9 efektivity r\u016fzn\u00fdch metod v\u00fdroby vod\u00edku v\u00fdpo\u010dtem celkov\u00fdch n\u00e1klad\u016f na v\u00fdrobu vod\u00edku b\u011bhem jeho \u017eivotn\u0161 d\u011blen\u00fdch celkov\u00fdm mno\u017estv\u00edm vyroben\u00e9ho vod\u00edku.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-04-29"},{"pojem":"N\u00edzkouhli\u010dkov\u00fd vod\u00edk","doslovny":"low-carbon hydrogen","zkratka":"LCH","popis":"Vod\u00edk vyr\u00e1b\u011bn\u00fd z neobnoviteln\u00fdch zdroj\u016f energie, kter\u00fd spln\u011b prahovou hodnotu sn\u00edzen\u00ed emis\u00ed sklen\u00edkov\u00fdch plyn\u016f o 70 % v porovn\u00e1n\u00ed s fossiln\u00edm kompar\u00e1torem.","kategorie":"V\u00fdroba","subkategorie":"Klasifikace podle zdroje","datum":"2025-04-29"},{"pojem":"Nomin\u00e1ln\u00ed pracovn\u00ed tlak","doslovny":"Nominal working pressure","zkratka":"NWP","popis":"Provozn\u00ed tlak nebo jmenovit\u00fd pracovn\u00ed tlak znamen\u00e1 relativn\u00ed tlak, kter\u00fd charakterizuje typick\u00fd provoz syst\u00e9mu.","kategorie":"","subkategorie":"","datum":"2025-09-29"},{"pojem":"NZIA (2024\/1735)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed, kter\u00fdm se z\u0159izuje r\u00e1mec opat\u0159en\u00ed pro pos\u00edlen\u00ed evropsk\u00e9ho ekosyst\u00e9mu v\u00fdroby technologi\u00ed pro nulov\u00e9 \u010dist\u00e9 emise.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Obnoviteln\u00e9 zdroje energie","doslovny":"Renewable energy sources","zkratka":"OZE","popis":"Energie z obnoviteln\u00fdch nefosiln\u00edch zdroj\u016f (v\u011btr, slunce, geotermika, voda, biomasa atd.). Tato definice je v souladu s RED.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Odpar","doslovny":"Boil-off","zkratka":"","popis":"Proces, kdy se kapalina (nap\u0159. zkapaln\u011bn\u00fd vod\u00edk) m\u011bn\u00ed na plyn vlivem tepla.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-08-07"},{"pojem":"Odpa\u0159ova\u010d okol\u00edn\u00edho vzduchu","doslovny":"Ambient air vaporizer","zkratka":"AAV","popis":"Za\u0159\u00edzen\u00ed v LHRS, kter\u00e9 odpa\u0159uje kapaln\u00fd vod\u00edk s vyu\u017eit\u00edm tepla z okol\u00edn\u00edho vzduchu.","kategorie":"","subkategorie":"","datum":"2025-08-07"},{"pojem":"Odtlakovac\u00ed kom\u00edn","doslovny":"","zkratka":"","popis":"Kom\u00edn slu\u010duj\u00edc\u00ed odfuky a odtlaky pro odveden\u00ed a rozptyl do bezpe\u010dn\u00e9ho prost\u0159ed\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Odtlakovn\u00ed syst\u00e9mu","doslovny":"","zkratka":"","popis":"Proces odtlaku zbytkv\u00e9ho vod\u00edku ze syst\u00e9mu po ukon\u010den\u00ed pln\u011bn\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Omezova\u010d pr\u016ftoku vod\u00edku","doslovny":"","zkratka":"","popis":"Samo\u010dinn\u00e9 bezpe\u010dnostn\u00ed za\u0159\u00edzen\u00ed, kter\u00e9 p\u0159i p\u0159ekro\u010den\u00ed nastaven\u00e9 meze pr\u016ftoku uzav\u0159e p\u0159\u00eddvod vod\u00edku.","kategorie":"","subkategorie":"","datum":"2025-09-29"},{"pojem":"Ostrovn\u00ed \u0159e\u0161en\u00ed","doslovny":"Off-grid \/ island mode","zkratka":"","popis":"Koncepce vod\u00edkov\u00e9ho hospod\u00e1\u0159stv\u00ed s maxim\u00e1ln\u00ed rovnov\u00e1hou v\u00fdroby a spot\u0159eby.","kategorie":"","subkategorie":"","datum":"2025-09-29"},{"pojem":"Pal\u00e1diov\u00e9 nanodty\u010de","doslovny":"Palladium nanowires","zkratka":"","popis":"Nanostruktury z palladia ve tvaru dr\u00e1t\u016f pro vysoce citliv\u00e9 senzory vod\u00edku.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-08-12"},{"pojem":"Palivov\u00e9 \u010dl\u00e1nky s pevn\u00fdmi oxidy","doslovny":"Solid Oxide Fuel Cell","zkratka":"SOFC","popis":"Typ palivov\u00e9ho \u010dl\u00e1nku, kter\u00fd pou\u017e\u00edv\u00e1 pevn\u00fd keramick\u00fd oxidov\u00fd elektrolyt a pracuje p\u0159i vysok\u00fdch teplot\u00e1ch.","kategorie":"Aplikace","subkategorie":"Energetika","datum":"2025-08-07"},{"pojem":"Palivov\u00e9 \u010dl\u00e1nky s protonov\u011b v\u00fdm\u011bnnou membr\u00e1nou (PEMFCs)","doslovny":"proton-exchange membrane fuel cell","zkratka":"PEMFC","popis":"\u010cast\u00fd typ palivov\u00e9ho \u010dl\u00e1nku, kter\u00fd vyu\u017e\u00edv\u00e1 polymern\u00ed membr\u00e1nu pro p\u0159enos proton\u016f.","kategorie":"Aplikace","subkategorie":"Energetika","datum":"2025-08-07"},{"pojem":"Palivov\u00fd \u010dl\u00e1nek","doslovny":"Fuel Cell","zkratka":"FC","popis":"Za\u0159\u00edzen\u00ed, kter\u00e9 elekitu nevyr\u00e1b\u00ed spalov\u00e1n\u00edm, ale elektrochemickou reakc\u00ed.","kategorie":"Aplikace","subkategorie":"Energetika","datum":"2025-03-10"},{"pojem":"Palivov\u00fd koridor","doslovny":"Fueling Corridor","zkratka":"","popis":"Rozsah bezpe\u010dn\u00fdch provozn\u00edch podm\u00ednek pro pln\u011bn\u00ed paliva (teplota\/tlak).","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-08-12"},{"pojem":"Parn\u00ed reforming","doslovny":"Steam reforming","zkratka":"SR","popis":"B\u011b\u017en\u00e1 chemick\u00e1 metoda pro v\u00fdrobu vod\u00edku, p\u0159i n\u00ed\u017e p\u00e1ry reaguj\u00ed s uhlovodiky za p\u0159\u00edtomnosti katalyz\u00e1toru.","kategorie":"V\u00fdroba","subkategorie":"Reformov\u00e1n\u00ed","datum":"2025-08-12"},{"pojem":"Parn\u00ed reforming metanu","doslovny":"Steam methane reforming","zkratka":"SMR","popis":"Nejroz\u0161\u00ed\u0159en\u011bj\u0161\u00ed pr\u016fmyslov\u00e1 metoda v\u00fdroby vod\u00edku z metanu a p\u00e1ry.","kategorie":"V\u00fdroba","subkategorie":"Reformov\u00e1n\u00ed","datum":"2025-08-12"},{"pojem":"Pevn\u00e9 skladov\u00e1n\u00ed vod\u00edku","doslovny":"","zkratka":"","popis":"Metoda, p\u0159i kter\u00e9 je vod\u00edk skladov\u00e1n v pevn\u00fdch materi\u00e1lech.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-07"},{"pojem":"Plyn\u00e1rensk\u00fd bal\u00ed\u010dek (2024\/1788)","doslovny":"Odkaz","zkratka":"","popis":"Sm\u011brnice o spole\u010dn\u00fdch pravidlech pro vnitrojn\u00ed trh s plynem z obnoviteln\u00fdch zdroj\u016f, se zemn\u00edm plynem a s vod\u00edkem.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Plyn\u00e1rensk\u00fd bal\u00ed\u010dek (2024\/1789)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed o vnitrojn\u00edm trhu s plynem z obnoviteln\u00fdch zdroj\u016f, se zemn\u00edm plynem a s vod\u00edkem.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Plynn\u00fd vod\u00edk","doslovny":"Gaseous Hydrogen","zkratka":"GH\u2082","popis":"Vod\u00edk skladovan\u00fd a p\u0159epravovan\u00fd v plynn\u00e9m stavu.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Plynov\u00e1 difzn\u00ed vrstva","doslovny":"Gas diffusion layers","zkratka":"GDL","popis":"Por\u00e9zn\u00ed materi\u00e1l v palivov\u00e9m \u010dl\u00e1nku, kter\u00fd usnad\u0148uje transport vod\u00edku a kys\u00edku.","kategorie":"Aplikace","subkategorie":"Energetika","datum":"2025-08-07"},{"pojem":"Po\u010d\u00e1te\u010dn\u00ed kontrola t\u011bsnosti","doslovny":"Initial Leak Check","zkratka":"","popis":"Po\u010d\u00e1te\u010dn\u00ed kontrola t\u011bsnosti prov\u00e1d\u011bn\u00e1 p\u0159i p\u0159ipojen\u00ed d\u00e1vkovac\u00ed trysky k vozidlu.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-08-12"},{"pojem":"Podzemn\u00ed skladov\u00e1n\u00ed vod\u00edku","doslovny":"","zkratka":"","popis":"Skladov\u00e1n\u00ed velk\u00e9ho mno\u017estv\u00ed vod\u00edku v geologick\u00fdch formac\u00edch.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-08-07"},{"pojem":"Pojistn\u00fd ventil","doslovny":"","zkratka":"","popis":"Za\u0159\u00edzen\u00ed k uvoln\u011bn\u00ed tlaku v p\u0159\u00edpad\u011b p\u0159ekro\u010den\u00ed bezpe\u010dn\u00e9 hranice.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Pom\u011br H\/M","doslovny":"kapacita skladov\u00e1n\u00ed vod\u00edku","zkratka":"H\/M ratio","popis":"Pom\u011br po\u010dtu atom\u016f vod\u00edku k po\u010dtu atom\u016f kovu ve sltin\u011b, ud\u00e1vaj\u00edc\u00ed kapacitu skladov\u00e1n\u00ed vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-07"},{"pojem":"Power to hydrogen","doslovny":"energie do vod\u00edku","zkratka":"P2H","popis":"Proces, p\u0159i kter\u00e9m je elektrick\u00e1 energie p\u0159em\u011bn\u011bna na vod\u00edk, \u010dasto prost\u0159ednictv\u00edm elektrol\u00fdzy.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-08-12"},{"pojem":"Power-to-Gas","doslovny":"energie do plynu","zkratka":"PtG","popis":"Technologie, kter\u00e1 p\u0159em\u011b\u0148uje elektinu (casto p\u0159ebyte\u010dnou z OZE) na plynn\u00e1 paliva.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-12"},{"pojem":"Power-to-Methane","doslovny":"energie do metanu","zkratka":"PtM","popis":"Specifick\u00e1 cesta Power-to-Gas, kde je vod\u00edk d\u00e1le methanv\u00e1n za \u00fa\u010delem v\u00fdroby syntetick\u00e9ho metanu.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-12"},{"pojem":"Protokol pln\u011bn\u00ed","doslovny":"","zkratka":"","popis":"Soubor pravidel a postup\u016f, kter\u00e9 se pou\u017e\u00edvaj\u00ed p\u0159i dopl\u0148ov\u00e1n\u00ed vod\u00edku do palivov\u00fdch n\u00e1dr\u017e\u00ed vod\u00edkov\u00fdch vozidel.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-04"},{"pojem":"Protokol pro pln\u011bn\u00ed paliva p\u0159i okol\u00edn\u00ed teplot\u011b","doslovny":"Ambient Temperature Fueling Protocol","zkratka":"","popis":"Protokol pln\u011bn\u00ed, kde je teplota dod\u00e1van\u00e9ho paliva vy\u0161\u0161\u00ed ne\u017e po\u017eadavky na p\u0159edchlazn\u00ed SAE J2601.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-08-12"},{"pojem":"Protonov\u00e1 v\u00fdm\u011bnn\u00e1 membr\u00e1na","doslovny":"Proton Exchange Membrane","zkratka":"PEM","popis":"Polopropustn\u00e1 membr\u00e1na, kter\u00e1 propou\u0161t\u00ed protony (H+) a z\u00e1rove\u0148 funguje jako elektronick\u00fd izol\u00e1tor.","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-03-10"},{"pojem":"Provozn\u00ed v\u00fddaje","doslovny":"Operating Expenses","zkratka":"OPEX","popis":"N\u00e1klady spojen\u00e9 s denn\u00edm provozem a \u00fadr\u017ebou za\u0159\u00edzen\u00ed nebo syst\u00e9mu.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-08-12"},{"pojem":"Provozovatel\u00e9 vod\u00edkov\u00fdch p\u0159enosov\u00fdch s\u00edt\u00ed","doslovny":"Hydrogen Transmission Network Operators","zkratka":"HTNO","popis":"Spole\u010dnosti odpov\u011bdn\u00e9 za v\u00fdstavbu, provoz a \u00fadr\u017ebu infrastruktury pro p\u0159epravu vod\u00edku.","kategorie":"Instituce a organizace","subkategorie":"N\u00e1rodn\u00ed instituce","datum":"2025-08-07"},{"pojem":"Pr\u016fm\u011brn\u00e1 rychlost n\u00e1r\u016fstu tlaku","doslovny":"Average Pressure Ramp","zkratka":"APRR","popis":"Rychlost, jakou tlak v pr\u016fb\u011bhu \u010dasu stoup\u00e1, casto v suvislosti s palivov\u00fdmi syst\u00e9my.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-10"},{"pojem":"Pr\u016ftok\u011br","doslovny":"Flow-meter","zkratka":"","popis":"P\u0159\u00edstroj m\u011b\u0159\u00edc\u00ed pr\u016ftok vod\u00edku b\u011bhem pln\u011bn\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Pr\u016ftokov\u00e1 regulace","doslovny":"","zkratka":"","popis":"\u0158\u00edzen\u00ed mno\u017estv\u00ed vod\u00edku dod\u00e1van\u00e9ho v\u00fddejn\u00edm stojanem.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"P\u0159edchlazn\u00e9 tankv\u00e1n\u00ed","doslovny":"Precooled Fueling","zkratka":"","popis":"Pln\u011bn\u00ed, kter\u00e9 spln\u00ed po\u017eadavky SAE J2601 (2016) nebo nov\u011bj\u0161\u00edch verz\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-08-12"},{"pojem":"P\u0159eprava vod\u00edku","doslovny":"","zkratka":"","popis":"Logistick\u00fd proces p\u0159esunu vod\u00edku z m\u00edsta v\u00fdroby na m\u00edsto spot\u0159eby.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-08-07"},{"pojem":"P\u0159\u00edv\u011bs","doslovny":"trailer","zkratka":"","popis":"Silni\u010dn\u00ed vozidla s velkokapacitn\u00edmi n\u00e1dr\u017eemi pro p\u0159epravu stla\u010den\u00e9ho nebo zkapaln\u011bn\u00e9ho vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Silni\u010dn\u00ed a \u017eelezni\u010dn\u00ed p\u0159eprava","datum":"2025-08-07"},{"pojem":"Pyrol\u00fdza","doslovny":"","zkratka":"","popis":"Termick\u00fd rozklad biomasy (nebo jin\u00fdch organick\u00fdch materi\u00e1l\u016f) za nep\u0159\u00edtomnosti kys\u00edku za \u00fa\u010delem v\u00fdroby vod\u00edku.","kategorie":"V\u00fdroba","subkategorie":"Pyrol\u00fdza a termick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"RED 3 (2023\/2413)","doslovny":"Odkaz","zkratka":"","popis":"Sm\u011brnice, pokud jde o podporu energie z obnoviteln\u00fdch zdroj\u016f.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Reduk\u010dn\u00ed ventil","doslovny":"","zkratka":"","popis":"Ventil umo\u017e\u0148uj\u00edc\u00ed sn\u00ed\u017een\u00ed tlaku vod\u00edku na po\u017eadovanou \u00farove\u0148.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"ReFuelEU Aviation (2023\/2405)","doslovny":"Odkaz","zkratka":"","popis":"Na\u0159\u00edzen\u00ed o zaji\u0161t\u011bn\u00ed rovn\u00fdch podm\u00ednek pro udr\u017eitelnou leteckou dopravu.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"Regula\u010dn\u00ed ventil","doslovny":"","zkratka":"","popis":"Ventil umo\u017e\u0148uj\u00edc\u00ed regulaci pr\u016ftoku vod\u00edku na po\u017eadovanou \u00farove\u0148.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Rekuperace energie","doslovny":"","zkratka":"","popis":"Obnova \u010d\u00e1sti energie uvoln\u011bn\u00e9 b\u011bhem procesu pln\u011bn\u00ed nebo expanze vod\u00edku.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Ostatn\u00ed technologie","datum":"2025-03-10"},{"pojem":"Rychl\u00e9 pln\u011bn\u00ed vod\u00edku","doslovny":"","zkratka":"","popis":"Pln\u011bn\u00ed p\u0159esahuj\u00edc\u00ed rychlost 60 g H2\/s.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Metody pln\u011bn\u00ed","datum":"2025-03-04"},{"pojem":"SAE International","doslovny":"","zkratka":"","popis":"Glob\u00e1ln\u00ed profesn\u00ed asociace in\u017een\u00fdr\u016f a technik\u016f specializuj\u00edc\u00edch se na dopravu.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-04"},{"pojem":"SAE J2601","doslovny":"","zkratka":"","popis":"Standard, kter\u00fd specifikuje po\u017eadavky na tankv\u00e1n\u00ed vod\u00edkov\u00fdch palivov\u00fdch \u010dl\u00e1nk\u016f (FCEV).","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-04"},{"pojem":"SAE J2601\/5","doslovny":"","zkratka":"","popis":"Specifick\u00e1 \u010d\u00e1st standardu SAE J2601 pro n\u00e1kladn\u00ed vozidla, autobusy, vlaky.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-04"},{"pojem":"SAE Standard","doslovny":"","zkratka":"","popis":"Technick\u00e1 norma vyvinut\u00e1 a vyd\u00e1van\u00e1 organizac\u00ed SAE International.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-04"},{"pojem":"Sekven\u010dn\u00ed pln\u011bn\u00ed vod\u00edku","doslovny":"Back-to-back hydrogen refueling","zkratka":"","popis":"Proces pln\u011bn\u00ed v\u00edce vozidel v rychl\u00e9m sledu s minim\u00e1ln\u00ed nebo \u017e\u00e1dnou prodlevou.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Metody pln\u011bn\u00ed","datum":"2025-08-07"},{"pojem":"Simulace pln\u011bn\u00ed vod\u00edkem","doslovny":"Hydrogen Filling Simulation","zkratka":"H2FillS","popis":"Jednodimenzion\u00e1ln\u00ed fyzik\u00e1ln\u00ed model termodynamiky tekutin simuluj\u00edc\u00ed proces pln\u011bn\u00ed v re\u00e1ln\u00e9m sv\u011bt\u011b.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-08-12"},{"pojem":"Slu\u017eby v\u00fdkonov\u00e9 rovnov\u00e1hy","doslovny":"Balancing services","zkratka":"SVR","popis":"Podm\u00fanla tzv. podp\u016frn\u00fdch slu\u017eeb slouc\u00ed k zaji\u0161t\u011bn\u00ed stability frekvence a v\u00fdkonu v p\u0159enosov\u00e9 soustav\u011b.","kategorie":"Ekonomika a trh","subkategorie":"Slu\u017eby a platformy","datum":"2025-04-29"},{"pojem":"Sm\u011brnice o tlakov\u00fdch n\u00e1dob\u00e1ch na p\u0159epravu","doslovny":"Transportable Pressure Equipment Directive","zkratka":"TPED","popis":"Sm\u011brnice 2010\/35\/EU, kter\u00e1 se zab\u00fdv\u00e1 p\u0159epravovateln\u00fdmi tlakov\u00fdmi za\u0159\u00edzen\u00edmi.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-05-22"},{"pojem":"Sm\u011brnice o tlakov\u00fdch za\u0159\u00edzen\u00edch","doslovny":"Pressure Equipment Directive","zkratka":"PED","popis":"Sm\u011brnice EU 2014\/68\/EU, kter\u00e1 stanvuje pravidla pro navrh\u00e1n\u00ed, v\u00fdrobu a posuzov\u00e1n\u00ed shody tlakov\u00fdch za\u0159\u00edzen\u00ed.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-08-22"},{"pojem":"Soln\u00e9 kaverny","doslovny":"","zkratka":"","popis":"Podzemn\u00ed dutiny vytvo\u0159en\u00e9 v soln\u00fdch lo\u017eisk\u00e1ch, vhodn\u00e9 pro velkokapacitn\u00ed skladov\u00e1n\u00ed vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-08-07"},{"pojem":"Spole\u010dnost automobilov\u00fdch in\u017een\u00fdr\u016f","doslovny":"Society of Automotive Engineers","zkratka":"SAE","popis":"Organizace zab\u00fdvaj\u00edc\u00ed se v\u00fdvojem standard\u016f a pokro\u010dil\u00fdmi technologiemi v automobilov\u00e9m, leteck\u00e9m a dopravn\u00edm pr\u016fmyslu.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-04"},{"pojem":"Stav napln\u011bn\u00ed","doslovny":"State of Charge","zkratka":"SOC","popis":"Mno\u017estv\u00ed vod\u00edku zb\u00fdvaj\u00edc\u00edho v z\u00e1sobn\u00edku v\u016f\u010di jeho pln\u00e9 kapacit\u011b, obvkle vyjad\u0159ovan\u00e9 v procentech.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-10"},{"pojem":"Stla\u010den\u00fd plynn\u00fd vod\u00edk","doslovny":"Compressed Gaseous Hydrogen","zkratka":"CGH\u2082","popis":"Vod\u00edk ulo\u017een\u00fd pod vysok\u00fdm tlakem, obvkle mezi 350 a 700 bary.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-12"},{"pojem":"Syst\u00e9m pro skladov\u00e1n\u00ed stla\u010den\u00e9ho vod\u00edku","doslovny":"Compressed Hydrogen Storage System","zkratka":"CHSS","popis":"Skladovac\u00ed syst\u00e9m stla\u010den\u00e9ho vod\u00edku zahrnuje skladov\u00e1n\u00ed vod\u00edku pod vysok\u00fdm tlakem (obvkle 350 a\u017e 700 bar\u016f).","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Syst\u00e9m p\u0159edchlazn\u00ed plyn-kapalina","doslovny":"","zkratka":"","popis":"Inovativn\u00ed strategie v LHRS, kter\u00e1 vyu\u017e\u00edv\u00e1 chladc\u00ed energii kapaln\u00e9ho vod\u00edku k p\u0159edchlazn\u00ed plynn\u00e9ho vod\u00edku.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Ostatn\u00ed technologie","datum":"2025-08-07"},{"pojem":"\u0160ed\u00fd vod\u00edk","doslovny":"Grey Hydrogen","zkratka":"","popis":"Zastaral\u00e9 ozna\u010den\u00ed. V\u00fdroba vod\u00edku s velkou emisn\u00ed stopou bez zachycen\u00ed oxidu uhli\u010dit\u00e9ho.","kategorie":"V\u00fdroba","subkategorie":"Klasifikace podle zdroje","datum":"2025-08-07"},{"pojem":"\u0160krten\u00ed pr\u016ftoku","doslovny":"","zkratka":"","popis":"Termodynamick\u00e1 zm\u011bna, p\u0159i kter\u00e9 doch\u00e1z\u00ed k trval\u00e9 tlakov\u00e9 ztr\u00e1t\u011b proud\u00edc\u00edho plynu.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Termodynamika","datum":"2025-05-22"},{"pojem":"T40, T30, T20","doslovny":"","zkratka":"","popis":"Teplotn\u00ed kategorie (-40 \u00b0C, -30 \u00b0C, -20 \u00b0C)","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Pln\u00edc\u00ed protokoly","datum":"2025-03-12"},{"pojem":"Teplotn\u011b aktivovan\u00fd odtlakovac\u00ed ventil","doslovny":"Thermal Pressure Relief Device","zkratka":"TPRD","popis":"Bezpe\u010dnostn\u00ed ventil typicky nastaven na teplotu 110\u00b0C.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Bezpe\u010dnostn\u00ed prvky","datum":"2025-03-10"},{"pojem":"Termol\u00fdza","doslovny":"","zkratka":"","popis":"Metoda v\u00fdroby vod\u00edku, p\u0159i n\u00ed\u017e je l\u00e1tka rozk\u00e1n\u00e1 teplem.","kategorie":"V\u00fdroba","subkategorie":"Pyrol\u00fdza a termick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"Tlakovov\u00e1 adsorpce","doslovny":"Pressure swing adsorption","zkratka":"PSA","popis":"Proces \u010di\u0161t\u011bn\u00ed plyn\u016f, kter\u00fd odstra\u0148uje ne\u010distoty z vod\u00edku selektivn\u00ed adsorpc\u00ed na pevn\u00fdch adsorbentech.","kategorie":"V\u00fdroba","subkategorie":"\u010ci\u0161t\u011bn\u00ed a separace","datum":"2025-08-12"},{"pojem":"Tlakovov\u00e1 ztr\u00e1ta","doslovny":"","zkratka":"","popis":"Pokles tlaku vod\u00edku p\u0159i jeho pr\u016fchodu syst\u00e9mem.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Fyzik\u00e1ln\u00ed jevy","datum":"2025-03-10"},{"pojem":"Transevropsk\u00e1 dopravni s\u00edt\u011b","doslovny":"Trans-European Transport Networks","zkratka":"TEN-T","popis":"S\u00edt\u011b hlavn\u00ed transevropsk\u00e9 dopravni infrastruktury zahrnuj\u00edc\u00ed \u017eeleznice, vnitrozemsk\u00e9 vodn\u00ed cesty, n\u00e1mo\u0159n\u00ed dopravu a silnice.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"T\u0159\u00edzov\u00e9 rozhran\u00ed","doslovny":"Three-phase interface","zkratka":"","popis":"Kl\u00ed\u010dov\u00e1 oblast v palivov\u00e9m \u010dl\u00e1nku, kde se setk\u00e1v\u00e1 plynn\u00e9 palivo, pevn\u00e1 elektroda a elektrolyt.","kategorie":"Aplikace","subkategorie":"Energetika","datum":"2025-08-07"},{"pojem":"Typ I","doslovny":"","zkratka":"","popis":"Celokovov\u00e1 lahev - monolitick\u00e1 konstrukce.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Typ II","doslovny":"","zkratka":"","popis":"\u010c\u00e1ste\u010dn\u011b ztuven\u00e1 kovov\u00e1 lahev.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Typ III","doslovny":"","zkratka":"","popis":"Pln\u011b ztuven\u00e1 kovov\u00e1 lahev s kompletnim kompozitn\u00edm obalem.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Typ IV","doslovny":"","zkratka":"","popis":"Pln\u011b kompozitn\u00ed lahev - Polymern\u00ed vnitojn\u00ed liner s uhlik\u00fdm kompozitn\u00edm obalem.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Typ V","dословny":"","zkratka":"","popis":"Bezlo\u017ekov\u00e1 kompozitn\u00ed lahev - Celokompoz\u00edtn\u00ed konstrukce bez vnitojn\u00ed vlo\u017eky.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-03-10"},{"pojem":"Uhl\u00edkov\u00e9 clo","doslovny":"carbon border adjustment mechanism","zkratka":"CBAM","popis":"Mechanismus \u00fapravy uhl\u00edkov\u00fdch hranic EU je uhl\u00edkov\u00e9 clo na uhl\u00edkov\u011b n\u00e1ro\u010dn\u00e9 produkty.","kategorie":"Bezpe\u010dnost a normy","subkategorie":"Evropsk\u00e9 p\u0159edpisy a sm\u011brnice","datum":"2025-04-29"},{"pojem":"\u00darove\u0148 n\u00e1klad\u016f na energii","doslovny":"","zkratka":"LCOE","popis":"Zpr\u016fm\u011brovan\u00e9 n\u00e1klady na v\u00fdrobu jednotky elektiny (\u20ac/MWh nebo $/kWh).","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-08-07"},{"pojem":"Utilizace elektrolyz\u00e9ru","doslovny":"","zkratka":"","popis":"Celkov\u00e9 vyu\u017eit\u00ed elektrolyz\u00e9ru","kategorie":"V\u00fdroba","subkategorie":"Elektrol\u00fdza","datum":"2025-04-29"},{"pojem":"Ventil na n\u00e1dr\u017ei","doslovny":"On-tank valve","zkratka":"OTV","popis":"Ventil\/sestava ventil\u016f instalovan\u00fdch na hrdle tlakov\u00e9 lahve - tak\u00e9 ozna\u010den\u00e9 jako HTV.","kategorie":"Aplikace","subkategorie":"Doprava","datum":"2025-03-10"},{"pojem":"Ventil vod\u00edkov\u00e9 n\u00e1dr\u017ee","doslovny":"Hydrogen tank valve","zkratka":"HTV","popis":"Ventil\/sestava ventil\u016f ur\u010den\u00fdch k regulaci pr\u016ftoku vod\u00edku do a z akumula\u010dn\u00edch n\u00e1dr\u017e\u00ed.","kategorie":"Aplikace","subkategorie":"Doprava","datum":"2025-03-10"},{"pojem":"Ve\u0159ejn\u00e1 pln\u00edc\u00ed stanice vod\u00edku","doslovny":"","zkratka":"","popis":"Stanice dostupn\u00e1 \u0161irok\u00e9 ve\u0159ejnosti bez nutnosti p\u0159edchoz\u00edho smluvn\u00edho vztahu.","kategorie":"","subkategorie":"","datum":"2025-09-29"},{"pojem":"Vod\u00edk","doslovny":"Hydrogen","zkratka":"H\u2082","popis":"Z\u00e1kladn\u00ed chemick\u00fd prvek, kter\u00fd je v kontextu energetiky zkoum\u00e1n jako slibn\u00fd nosi\u010d energie.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Chemick\u00e9 procesy","datum":"2025-03-10"},{"pojem":"Vod\u00edkov\u00e1 \u010derpac\u00ed stanice","doslovny":"Hydrogen Refueling Station","zkratka":"HRS","popis":"Za\u0159\u00edzen\u00ed, kde lze vozidla s palivov\u00fdmi \u010dl\u00e1nky (FCV) dopnit vod\u00edkov\u00fdm palivem.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"\u010cerpac\u00ed stanice","datum":"2025-03-10"},{"pojem":"Vod\u00edkov\u00e1 distribu\u010dn\u00ed soustava","doslovny":"","zkratka":"","popis":"Tvo\u0159\u00ed potrubni s\u00edt pro m\u00edstn\u00ed nebo region\u00e1ln\u00ed dopravu vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"Vod\u00edkov\u00e1 k\u0159ehkost","doslovny":"Hydrogen embrittlement","zkratka":"","popis":"Oslab\u011bn\u00ed kovov\u00fdch materi\u00e1l\u016f zp\u016fsoben\u00e9 absorpci vod\u00edku.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Materi\u00e1lov\u00e1 v\u011bda","datum":"2025-03-10"},{"pojem":"Vod\u00edkov\u00e1 p\u0159epravni s\u00edt\u011b","doslovny":"","zkratka":"","popis":"Potrubni s\u00edt pro dopravu vod\u00edku vysok\u00e9ho stupn\u011b \u010distoty.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"Vod\u00edkov\u00e1 soustava","doslovny":"","zkratka":"","popis":"Soustava infrastruktury, v\u010detn\u011b vod\u00edkov\u00fdch s\u00edt\u00ed, za\u0159\u00edzen\u00ed pro skladov\u00e1n\u00ed vod\u00edku a vod\u00edkov\u00fdch termin\u00e1l\u016f.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-04-29"},{"pojem":"Vod\u00edkov\u00e1 strategie \u010cR","doslovny":"","zkratka":"","popis":"Hlavn\u00ed dokument na\u010drtavaj\u00edc\u00ed sm\u011br rozvoje vod\u00edkov\u00e9ho hospod\u00e1\u0159stv\u00ed v \u010cR.","kategorie":"Instituce a organizace","subkategorie":"Strategick\u00e9 dokumenty","datum":"2025-04-29"},{"pojem":"Vod\u00edkov\u00e9 hospod\u00e1\u0159stv\u00ed","doslovny":"","zkratka":"","popis":"Koncept ekonomiky, kde vod\u00edk funguje jako \u00fastiedn\u00ed nosi\u010d energie.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-08-07"},{"pojem":"Vod\u00edkov\u00e9 spalovac\u00ed motory","doslovny":"Hydrogen combustion engines","zkratka":"Hydrogen ICE","popis":"Tradi\u010dn\u00ed spalovac\u00ed motory upraven\u00e9 pro spalov\u00e1n\u00ed vod\u00edku nam\u00edsto fossiln\u00edch paliv.","kategorie":"Aplikace","subkategorie":"Doprava","datum":"2025-08-07"},{"pojem":"Vod\u00edkov\u00e9 \u00fadol\u00ed","doslovny":"Hydrogen valley","zkratka":"","popis":"Ekosyst\u00e9my, kter\u00e9 pokr\u00fdvaj\u00ed ur\u010ditou zem\u011bpisnou oblast, kde se n\u011bkolik vod\u00edkov\u00fdch aplikac\u00ed spoj\u00ed do integrov\u00e9ho vod\u00edkov\u00e9ho ekosyst\u00e9mu.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-04-29"},{"pojem":"Vod\u00edkov\u00fd dodavatelskijsk\u00fd \u0159et\u011bzec","doslovny":"Hydrogen Supply Chain","zkratka":"HSC","popis":"Zahrnuje cel\u00fd proces od v\u00fdroby elektiny p\u0159es produkci a distribuci vod\u00edku a\u017e po jeho fin\u00e1ln\u00ed aplikaci.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-08-07"},{"pojem":"Vod\u00edkov\u00fd podnik","doslovny":"","zkratka":"","popis":"Fyzick\u00e1 nebo pr\u00e1vnick\u00e1 osoba, kter\u00e1 vykon\u00e1v\u00e1 alespo\u0148 jednu z t\u011bchto funkc\u00ed: v\u00fdroba, doprava, dod\u00e1vky, n\u00e1kup nebo skladov\u00e1n\u00ed vod\u00edku.","kategorie":"Ekonomika a trh","subkategorie":"Obchodn\u00ed modely","datum":"2025-04-29"},{"pojem":"Vod\u00edkov\u00fd termin\u00e1l","doslovny":"","zkratka":"","popis":"Za\u0159\u00edzen\u00ed pou\u017e\u00edvan\u00e9 pro vykl\u00e1d\u00e1n\u00ed kapaln\u00e9ho vod\u00edku nebo kapaln\u00e9ho amoniaku a jeho p\u0159em\u011bnu na plynn\u00fd vod\u00edk pro vtl\u00e1\u010den\u00ed do vod\u00edkov\u00e9 s\u00edt\u011b.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Zkapalnni vod\u00edk","datum":"2025-04-29"},{"pojem":"V\u00fddejn\u00ed bod","doslovny":"","zkratka":"","popis":"M\u00edsto, kde se pohonne hm\u00f3ty, v\u010detn\u011b elektiny, prod\u00e1vaj\u00ed nebo vyd\u00e1vaj\u00ed do vozidel.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"\u010cerpac\u00ed stanice","datum":"2025-04-17"},{"pojem":"V\u00fddejn\u00ed m\u00edsto","doslovny":"","zkratka":"","popis":"Specifikovan\u00e9 m\u00edsto, kde se prov\u00e1d\u00ed v\u00fddej pohnn\u00fdch hmot do vozidel nebo jin\u00fdch n\u00e1dob.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"\u010cerpac\u00ed stanice","datum":"2025-04-17"},{"pojem":"V\u00fddejn\u00ed stojan","doslovny":"","zkratka":"","popis":"Technologick\u00e1 \u010d\u00e1st \u010derpac\u00ed stanice, kde doch\u00e1z\u00ed k fyzick\u00e9mu kontaktu z\u00e1kazn\u00edka s \u010derpac\u00ed stanic\u00ed.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Za\u0159\u00edzen\u00ed \u010derpac\u00edch stanic","datum":"2025-04-17"},{"pojem":"V\u00fddejn\u00ed za\u0159\u00edzen\u00ed","doslovny":"","zkratka":"","popis":"Za\u0159\u00edzen\u00ed na \u010derpac\u00ed stanici, kter\u00e9 fyzicky vyd\u00e1v\u00e1 vod\u00edk do n\u00e1dr\u017ee vozidla.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Za\u0159\u00edzen\u00ed \u010derpac\u00edch stanic","datum":"2025-08-07"},{"pojem":"Vysoce entropick\u00e9 slitiny","doslovny":"Highly Entropic Alloys","zkratka":"HEA","popis":"Slitiny tvo\u0159en\u00e9 n\u011bkolika prvky v p\u0159ibli\u017en\u011b stechiometrick\u00e9m pom\u011bru pro skladov\u00e1n\u00ed vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Alternativn\u00ed nosi\u010de","datum":"2025-08-07"},{"pojem":"Vyt\u011b\u017een\u00e1 plynov\u00e1 pole","doslovny":"","zkratka":"","popis":"Ji\u017e existuj\u00edc\u00ed podzemn\u00ed z\u00e1sobn\u00edky, kter\u00e9 lze p\u0159izp\u016fsobit pro skladov\u00e1n\u00ed vod\u00edku.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"Stla\u010den\u00fd plyn","datum":"2025-08-07"},{"pojem":"WEH","doslovny":"","zkratka":"","popis":"Jeden z v\u00fdrobc\u016f za\u0159\u00edzen\u00ed pro v\u00fddej vod\u00edku.","kategorie":"Pln\u00edc\u00ed infrastruktura","subkategorie":"Za\u0159\u00edzen\u00ed \u010derpac\u00edch stanic","datum":"2025-03-10"},{"pojem":"X80 potrub\u00ed ocel","doslovny":"","zkratka":"","popis":"Typ vysokopevnostn\u00ed oceli pou\u017e\u00edvan\u00e9 pro plynov\u00e1 potrub\u00ed.","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Materi\u00e1lov\u00e1 v\u011bda","datum":"2025-08-07"},{"pojem":"Zachyc\u00e1v\u00e1n\u00ed, vyu\u017e\u00edv\u00e1n\u00ed a ukl\u00e1d\u00e1n\u00ed uhl\u00edku","doslovny":"carbon capture and storage\/carbon capture and utilization","zkratka":"CCS\/CCU","popis":"Ozna\u010duje ucel\u00e9n\u00fd soubor technologi\u00ed umo\u017e\u0148uj\u00edc\u00edch zachyt\u00e1v\u00e1n\u00ed, ukl\u00e1d\u00e1n\u00ed a vyu\u017eit\u00ed uhl\u00edku (CO\u2082).","kategorie":"Fyzik\u00e1ln\u00ed a chemick\u00e9 principy","subkategorie":"Chemick\u00e9 procesy","datum":"2025-04-29"},{"pojem":"Zelen\u00fd vod\u00edk","doslovny":"Renewable Hydrogen","zkratka":"RH\u2082","popis":"Vod\u00edk z\u00edskan\u00fd z obnoviteln\u00fdch zdroj\u016f energie.","kategorie":"V\u00fdroba","subkategorie":"Klasifikace podle zdroje","datum":"2025-03-10"},{"pojem":"Zpetn\u00e9 z\u00edsk\u00e1v\u00e1n\u00ed vod\u00edku","doslovny":"Hydrogen recovery","zkratka":"","popis":"Proces z\u00edsk\u00e1v\u00e1n\u00ed vod\u00edku z odpadn\u00edch proud\u016f nebo plyn\u016f.","kategorie":"V\u00fdroba","subkategorie":"\u010ci\u0161t\u011bn\u00ed a separace","datum":"2025-08-12"},{"pojem":"Zpetn\u00fd ventil","doslovny":"","zkratka":"","popis":"Mechanick\u00fd ventil zabran\u011bj\u00edc\u00ed zptn\u00e9mu proud\u011bn\u00ed vod\u00edku v potrub\u00ed.","kategorie":"Skladov\u00e1n\u00ed a p\u0159eprava","subkategorie":"P\u0159epravni a distribu\u010dn\u00ed s\u00edt\u011b","datum":"2025-03-10"},{"pojem":"Zply\u0148ov\u00e1n\u00ed","doslovny":"Gasification","zkratka":"","popis":"Proces, p\u0159i kter\u00e9m jsou uhl\u00edkat\u00e9 materi\u00e1ly (uhl\u00ed, biomasa) p\u0159em\u011b\u0148ov\u00e1ny na sm\u011bs plyn\u016f (syngas).","kategorie":"V\u00fdroba","subkategorie":"Pyrol\u00fdza a termick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"Zply\u0148ov\u00e1n\u00ed uhl\u00ed","doslovny":"","zkratka":"","popis":"Specifick\u00fd proces zply\u0148ov\u00e1n\u00ed, kde je jako surovina pou\u017eito uhl\u00ed pro v\u00fdrobu vod\u00edku.","kategorie":"V\u00fdroba","subkategorie":"Pyrol\u00fdza a termick\u00e9 procesy","datum":"2025-08-12"},{"pojem":"Plynojem","doslovny":"","zkratka":"","popis":"Skladovac\u00ed za\u0159\u00edzen\u00ed pro plyn zahrnuj\u00edc\u00ed nadzemn\u00ed a podzemn\u00ed sklady plyn\u016f.","kategorie":"","subkategorie":"","datum":"2025-10-02"},{"pojem":"Vysokotlak\u00fd vod\u00edk","doslovny":"","zkratka":"","popis":"","kategorie":"","subkategorie":"","datum":"2026-02-23"},{"pojem":"Podchlazn\u00fd vod\u00edk","doslovny":"","zkratka":"","popis":"","kategorie":"","subkategorie":"","datum":"2026-02-23"}];
+
+// State
+let state = { query: '', cat: '', alpha: '', sort: 'az' };
+
+// Category colors
+const CAT_COLORS = {
+  'Výroba': '#0057b8',
+  'Bezpečnost a normy': '#dc2626',
+  'Ekonomika a trh': '#16a34a',
+  'Fyzikální a chemické principy': '#7c3aed',
+  'Instituce a organizace': '#b45309',
+  'Plnící infrastruktura': '#0891b2',
+  'Skladování a přeprava': '#ea580c',
+  'Aplikace': '#be185d',
+};
+
+function highlight(text, q) {
+  if (!q || !text) return text || '';
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(escaped, 'gi'), m => `<mark>${m}</mark>`);
+}
+
+function getLetters() {
+  return [...new Set(DATA.map(d => d.pojem[0].toUpperCase()))].sort((a,b) => a.localeCompare(b,'cs'));
+}
+
+function filterData() {
+  let d = DATA.filter(item => item.pojem && item.pojem.trim());
+  if (state.cat) d = d.filter(i => i.kategorie === state.cat);
+  if (state.alpha) d = d.filter(i => i.pojem[0].toUpperCase() === state.alpha);
+  if (state.query) {
+    const q = state.query.toLowerCase();
+    d = d.filter(i =>
+      (i.pojem && i.pojem.toLowerCase().includes(q)) ||
+      (i.zkratka && i.zkratka.toLowerCase().includes(q)) ||
+      (i.popis && i.popis.toLowerCase().includes(q)) ||
+      (i.doslovny && i.doslovny.toLowerCase().includes(q))
+    );
+  }
+  if (state.sort === 'az') d.sort((a,b) => a.pojem.localeCompare(b.pojem, 'cs'));
+  else if (state.sort === 'za') d.sort((a,b) => b.pojem.localeCompare(a.pojem, 'cs'));
+  else if (state.sort === 'newest') d.sort((a,b) => (b.datum||'').localeCompare(a.datum||''));
+  return d;
+}
+
+function getCatCounts() {
+  const counts = {};
+  DATA.filter(d=>d.pojem).forEach(d => {
+    const k = d.kategorie || '';
+    if (k) counts[k] = (counts[k]||0)+1;
+  });
+  return counts;
+}
+
+function renderCategories() {
+  const counts = getCatCounts();
+  const cats = Object.entries(counts).sort((a,b) => a[0].localeCompare(b[0],'cs'));
+  const list = document.getElementById('catList');
+  list.innerHTML = cats.map(([cat, cnt]) => `
+    <button class="cat-btn${state.cat===cat?' active':''}" data-cat="${cat}" style="${state.cat===cat?`border-left:3px solid ${CAT_COLORS[cat]||'#0057b8'};padding-left:calc(1.25rem - 3px)`:''}" >
+      <span>${cat}</span>
+      <span class="cat-count">${cnt}</span>
+    </button>
+  `).join('');
+  document.getElementById('countAll').textContent = DATA.filter(d=>d.pojem).length;
+  list.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.cat = btn.dataset.cat === state.cat ? '' : btn.dataset.cat;
+      state.alpha = '';
+      renderAll();
+    });
+  });
+  document.querySelector('.cat-btn.active[data-cat=""]').addEventListener('click', () => {
+    state.cat = '';
+    state.alpha = '';
+    renderAll();
+  });
+}
+
+function renderAlpha() {
+  const letters = getLetters();
+  const filtered = filterData();
+  const activeLetters = new Set(filtered.map(d => d.pojem[0].toUpperCase()));
+  const nav = document.getElementById('alphaNav');
+  nav.innerHTML = letters.map(l => `
+    <button class="alpha-btn${state.alpha===l?' active':''}${!activeLetters.has(l)?' disabled':''}" data-l="${l}">${l}</button>
+  `).join('');
+  nav.querySelectorAll('.alpha-btn:not(.disabled)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.alpha = btn.dataset.l === state.alpha ? '' : btn.dataset.l;
+      renderAll();
+    });
+  });
+}
+
+function renderCards() {
+  const filtered = filterData();
+  const grid = document.getElementById('cardsGrid');
+  const q = state.query;
+
+  document.getElementById('statCount').textContent = filtered.length;
+  document.getElementById('resultsCount').innerHTML = filtered.length === DATA.length
+    ? `Zobrazeno <strong>všech ${filtered.length}</strong> pojmů`
+    : `Nalezeno <strong>${filtered.length}</strong> pojmů`;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Nic nenalezeno</h3><p>Zkus jiný výraz nebo zruš filtry.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((item, idx) => {
+    const color = CAT_COLORS[item.kategorie] || '#6b7280';
+    return `
+    <div class="card" data-idx="${idx}" style="border-left: 3px solid ${color}">
+      <div class="card-header">
+        <div class="card-title-area">
+          <div class="card-pojem">${highlight(item.pojem, q)}</div>
+          <div class="card-meta">
+            ${item.zkratka ? `<span class="tag tag-zkratka">${highlight(item.zkratka, q)}</span>` : ''}
+            ${item.kategorie ? `<span class="tag tag-cat">${item.kategorie}</span>` : ''}
+            ${item.subkategorie ? `<span class="tag tag-sub">${item.subkategorie}</span>` : ''}
+            ${item.doslovny && item.doslovny !== 'Odkaz' ? `<span class="tag tag-en">${item.doslovny}</span>` : ''}
+          </div>
+        </div>
+        <svg class="card-chevron" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-popis">${highlight(item.popis || '<em style="color:#aaa">Popis zatím chybí.</em>', q)}</div>
+        ${item.datum ? `<div class="card-footer-info"><span>📅 ${item.datum}</span></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => card.classList.toggle('expanded'));
+  });
+}
+
+function renderAll() {
+  renderCategories();
+  renderAlpha();
+  renderCards();
+}
+
+// Init
+document.getElementById('searchInput').addEventListener('input', e => {
+  state.query = e.target.value;
+  document.getElementById('clearBtn').style.display = state.query ? 'block' : 'none';
+  state.alpha = '';
+  renderAll();
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  state.query = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  renderAll();
+});
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  state.sort = e.target.value;
+  renderCards();
+});
+
+document.querySelector('.cat-btn').addEventListener('click', () => {
+  state.cat = '';
+  state.alpha = '';
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
