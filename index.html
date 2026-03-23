@@ -735,8 +735,12 @@ function renderCategories() {
 }
 
 function renderAlpha() {
-  const filtered = filterData();
-  const active = new Set(filtered.map(d => d.pojem[0].toUpperCase()));
+  // Dostupná písmena = z dat filtrovaných BEZ alpha (aby šlo přepínat mezi písmeny)
+  const savedAlpha = state.alpha;
+  state.alpha = '';
+  const withoutAlpha = filterData();
+  state.alpha = savedAlpha;
+  const active = new Set(withoutAlpha.map(d => d.pojem[0].toUpperCase()));
   const all = [...new Set(DATA.filter(d=>d.pojem).map(d => d.pojem[0].toUpperCase()))].sort((a,b) => a.localeCompare(b,'cs'));
   document.getElementById('alphaNav').innerHTML = all.map(l =>
     `<button class="alpha-btn${state.alpha===l?' active':''}${!active.has(l)?' disabled':''}" data-l="${l}">${l}</button>`
