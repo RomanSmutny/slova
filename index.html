@@ -659,9 +659,12 @@ function getHierarchyPath(pojem) {
 // ── STATE & RENDER ──────────────────────────────────────────────
 let state = { query: '', cat: '', subcat: '', alpha: '', sort: 'az', expandedCats: new Set() };
 
+const normSub = s => s.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, d => '0123456789'['₀₁₂₃₄₅₆₇₈₉'.indexOf(d)]);
 function hl(text, q) {
   if (!q || !text) return text || '';
-  return text.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), m => `<mark>${m}</mark>`);
+  const qn = normSub(q.toLowerCase());
+  const re = new RegExp(qn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  return normSub(text).replace(re, (m, offset) => `<mark>${text.slice(offset, offset + m.length)}</mark>`);
 }
 
 function filterData() {
@@ -676,20 +679,21 @@ function filterData() {
   }
   if (state.alpha) d = d.filter(i => i.pojem[0].toUpperCase() === state.alpha);
   if (state.query) {
-    const q = state.query.toLowerCase();
+    const norm = s => s.toLowerCase().replace(/[₀₁₂₃₄₅₆₇₈₉]/g, d => '0123456789'['₀₁₂₃₄₅₆₇₈₉'.indexOf(d)]);
+    const q = norm(state.query);
     d = d.filter(i =>
-      (i.pojem     && i.pojem.toLowerCase().includes(q)) ||
-      (i.doslovny  && i.doslovny.toLowerCase().includes(q)) ||
-      (i.zkratka   && i.zkratka.toLowerCase().includes(q)) ||
-      (i.popis     && i.popis.toLowerCase().includes(q)) ||
-      (i.url       && i.url.toLowerCase().includes(q))
+      (i.pojem     && norm(i.pojem).includes(q)) ||
+      (i.doslovny  && norm(i.doslovny).includes(q)) ||
+      (i.zkratka   && norm(i.zkratka).includes(q)) ||
+      (i.popis     && norm(i.popis).includes(q)) ||
+      (i.url       && norm(i.url).includes(q))
     );
     const priority = i => {
-      if (i.pojem    && i.pojem.toLowerCase().includes(q))    return 0;
-      if (i.doslovny && i.doslovny.toLowerCase().includes(q)) return 1;
-      if (i.zkratka  && i.zkratka.toLowerCase().includes(q))  return 2;
-      if (i.popis    && i.popis.toLowerCase().includes(q))    return 3;
-      if (i.url      && i.url.toLowerCase().includes(q))      return 4;
+      if (i.pojem    && norm(i.pojem).includes(q))    return 0;
+      if (i.doslovny && norm(i.doslovny).includes(q)) return 1;
+      if (i.zkratka  && norm(i.zkratka).includes(q))  return 2;
+      if (i.popis    && norm(i.popis).includes(q))    return 3;
+      if (i.url      && norm(i.url).includes(q))      return 4;
       return 5;
     };
     d.sort((a, b) => {
